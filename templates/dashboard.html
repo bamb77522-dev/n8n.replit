@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Serelix AI{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="dashboard-sidebar">
+        <div class="sidebar-header">
+            <h3>Welcome, {{ current_user.name }}</h3>
+            <p>{{ current_user.company or 'Personal Account' }}</p>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}" class="nav-item active">
+                <i class="fas fa-chart-pie"></i>
+                <span>Overview</span>
+            </a>
+            <a href="{{ url_for('clients') }}" class="nav-item">
+                <i class="fas fa-users"></i>
+                <span>Clients</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-project-diagram"></i>
+                <span>Projects</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Analytics</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+        </nav>
+    </div>
+    
+    <div class="dashboard-main">
+        <div class="dashboard-header">
+            <h1>Dashboard Overview</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="openClientModal()">
+                    <i class="fas fa-plus"></i>
+                    Add Client
+                </button>
+            </div>
+        </div>
+        
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ total_clients }}</div>
+                    <div class="stat-label">Total Clients</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ leads }}</div>
+                    <div class="stat-label">New Leads</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-handshake"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ active }}</div>
+                    <div class="stat-label">Active Projects</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number">$127K</div>
+                    <div class="stat-label">Monthly Revenue</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dashboard-grid">
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h3>Recent Clients</h3>
+                    <a href="{{ url_for('clients') }}" class="card-link">View All</a>
+                </div>
+                <div class="card-content">
+                    {% if clients %}
+                        <div class="client-list">
+                            {% for client in clients[:5] %}
+                            <div class="client-item">
+                                <div class="client-avatar">
+                                    {{ client.name[0].upper() }}
+                                </div>
+                                <div class="client-info">
+                                    <div class="client-name">{{ client.name }}</div>
+                                    <div class="client-company">{{ client.company or client.email }}</div>
+                                </div>
+                                <div class="client-status status-{{ client.status }}">
+                                    {{ client.status.title() }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-users"></i>
+                            <p>No clients yet</p>
+                            <button class="btn btn-secondary" onclick="openClientModal()">Add First Client</button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h3>Performance Metrics</h3>
+                </div>
+                <div class="card-content">
+                    <div class="metric-item">
+                        <div class="metric-label">Conversion Rate</div>
+                        <div class="metric-value">
+                            <span class="metric-number">68%</span>
+                            <span class="metric-change positive">+12%</span>
+                        </div>
+                        <div class="metric-bar">
+                            <div class="metric-progress" style="width: 68%"></div>
+                        </div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Client Satisfaction</div>
+                        <div class="metric-value">
+                            <span class="metric-number">94%</span>
+                            <span class="metric-change positive">+3%</span>
+                        </div>
+                        <div class="metric-bar">
+                            <div class="metric-progress" style="width: 94%"></div>
+                        </div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Project Completion</div>
+                        <div class="metric-value">
+                            <span class="metric-number">87%</span>
+                            <span class="metric-change positive">+8%</span>
+                        </div>
+                        <div class="metric-bar">
+                            <div class="metric-progress" style="width: 87%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Client Modal -->
+<div id="clientModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add New Client</h3>
+            <button class="modal-close" onclick="closeClientModal()">&times;</button>
+        </div>
+        <form id="clientForm" class="modal-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="clientName">Client Name *</label>
+                    <input type="text" id="clientName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="clientEmail">Email *</label>
+                    <input type="email" id="clientEmail" name="email" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="clientCompany">Company</label>
+                    <input type="text" id="clientCompany" name="company">
+                </div>
+                <div class="form-group">
+                    <label for="clientPhone">Phone</label>
+                    <input type="tel" id="clientPhone" name="phone">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="clientStatus">Status</label>
+                <select id="clientStatus" name="status">
+                    <option value="lead">Lead</option>
+                    <option value="prospect">Prospect</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="clientNotes">Notes</label>
+                <textarea id="clientNotes" name="notes" rows="3"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeClientModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Client</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openClientModal() {
+    document.getElementById('clientModal').style.display = 'flex';
+}
+
+function closeClientModal() {
+    document.getElementById('clientModal').style.display = 'none';
+    document.getElementById('clientForm').reset();
+}
+
+document.getElementById('clientForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const clientData = Object.fromEntries(formData.entries());
+    
+    try {
+        const response = await fetch('/add_client', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(clientData)
+        });
+        
+        if (response.ok) {
+            closeClientModal();
+            location.reload();
+        } else {
+            alert('Error adding client');
+        }
+    } catch (error) {
+        alert('Error adding client');
+    }
+});
+
+// Close modal when clicking outside
+document.getElementById('clientModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeClientModal();
+    }
+});
+</script>
+{% endblock %}

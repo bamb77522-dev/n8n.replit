@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}Clients - Serelix AI{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="dashboard-sidebar">
+        <div class="sidebar-header">
+            <h3>Welcome, {{ current_user.name }}</h3>
+            <p>{{ current_user.company or 'Personal Account' }}</p>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}" class="nav-item">
+                <i class="fas fa-chart-pie"></i>
+                <span>Overview</span>
+            </a>
+            <a href="{{ url_for('clients') }}" class="nav-item active">
+                <i class="fas fa-users"></i>
+                <span>Clients</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-project-diagram"></i>
+                <span>Projects</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Analytics</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+        </nav>
+    </div>
+    
+    <div class="dashboard-main">
+        <div class="dashboard-header">
+            <h1>Client Management</h1>
+            <div class="header-actions">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="clientSearch" placeholder="Search clients...">
+                </div>
+                <select id="statusFilter" class="filter-select">
+                    <option value="">All Statuses</option>
+                    <option value="lead">Lead</option>
+                    <option value="prospect">Prospect</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+                <button class="btn btn-primary" onclick="openClientModal()">
+                    <i class="fas fa-plus"></i>
+                    Add Client
+                </button>
+            </div>
+        </div>
+        
+        <div class="clients-container">
+            {% if clients %}
+                <div class="clients-grid" id="clientsGrid">
+                    {% for client in clients %}
+                    <div class="client-card" data-status="{{ client.status }}" data-name="{{ client.name.lower() }}" data-company="{{ (client.company or '').lower() }}">
+                        <div class="client-header">
+                            <div class="client-avatar">
+                                {{ client.name[0].upper() }}
+                            </div>
+                            <div class="client-info">
+                                <h3 class="client-name">{{ client.name }}</h3>
+                                <p class="client-company">{{ client.company or 'No Company' }}</p>
+                            </div>
+                            <div class="client-actions">
+                                <button class="action-btn" onclick="editClient({{ client.id }})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-btn delete" onclick="deleteClient({{ client.id }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="client-details">
+                            <div class="detail-item">
+                                <i class="fas fa-envelope"></i>
+                                <span>{{ client.email }}</span>
+                            </div>
+                            {% if client.phone %}
+                            <div class="detail-item">
+                                <i class="fas fa-phone"></i>
+                                <span>{{ client.phone }}</span>
+                            </div>
+                            {% endif %}
+                            <div class="detail-item">
+                                <i class="fas fa-calendar"></i>
+                                <span>Added {{ client.created_at.strftime('%b %d, %Y') }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="client-status-badge">
+                            <span class="status-badge status-{{ client.status }}">
+                                {{ client.status.title() }}
+                            </span>
+                        </div>
+                        
+                        {% if client.notes %}
+                        <div class="client-notes">
+                            <p>{{ client.notes[:100] }}{% if client.notes|length > 100 %}...{% endif %}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-users"></i>
+                    <h3>No clients yet</h3>
+                    <p>Start building your client base by adding your first client.</p>
+                    <button class="btn btn-primary" onclick="openClientModal()">
+                        <i class="fas fa-plus"></i>
+                        Add First Client
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Client Modal -->
+<div id="clientModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Add New Client</h3>
+            <button class="modal-close" onclick="closeClientModal()">&times;</button>
+        </div>
+        <form id="clientForm" class="modal-form">
+            <input type="hidden" id="clientId" name="id">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="clientName">Client Name *</label>
+                    <input type="text" id="clientName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="clientEmail">Email *</label>
+                    <input type="email" id="clientEmail" name="email" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="clientCompany">Company</label>
+                    <input type="text" id="clientCompany" name="company">
+                </div>
+                <div class="form-group">
+                    <label for="clientPhone">Phone</label>
+                    <input type="tel" id="clientPhone" name="phone">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="clientStatus">Status</label>
+                <select id="clientStatus" name="status">
+                    <option value="lead">Lead</option>
+                    <option value="prospect">Prospect</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="clientNotes">Notes</label>
+                <textarea id="clientNotes" name="notes" rows="3"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeClientModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="submitBtn">Add Client</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let isEditMode = false;
+
+function openClientModal() {
+    document.getElementById('clientModal').style.display = 'flex';
+    document.getElementById('modalTitle').textContent = 'Add New Client';
+    document.getElementById('submitBtn').textContent = 'Add Client';
+    isEditMode = false;
+}
+
+function closeClientModal() {
+    document.getElementById('clientModal').style.display = 'none';
+    document.getElementById('clientForm').reset();
+    document.getElementById('clientId').value = '';
+}
+
+function editClient(clientId) {
+    // In a real app, you'd fetch client data from the server
+    // For now, we'll extract data from the card
+    const clientCard = document.querySelector(`[data-name] .client-card`);
+    
+    document.getElementById('modalTitle').textContent = 'Edit Client';
+    document.getElementById('submitBtn').textContent = 'Update Client';
+    document.getElementById('clientId').value = clientId;
+    isEditMode = true;
+    
+    // Here you would populate the form with client data
+    document.getElementById('clientModal').style.display = 'flex';
+}
+
+async function deleteClient(clientId) {
+    if (!confirm('Are you sure you want to delete this client?')) return;
+    
+    try {
+        const response = await fetch(`/delete_client/${clientId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('Error deleting client');
+        }
+    } catch (error) {
+        alert('Error deleting client');
+    }
+}
+
+document.getElementById('clientForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const clientData = Object.fromEntries(formData.entries());
+    
+    try {
+        let response;
+        if (isEditMode) {
+            response = await fetch(`/update_client/${clientData.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(clientData)
+            });
+        } else {
+            response = await fetch('/add_client', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(clientData)
+            });
+        }
+        
+        if (response.ok) {
+            closeClientModal();
+            location.reload();
+        } else {
+            alert('Error saving client');
+        }
+    } catch (error) {
+        alert('Error saving client');
+    }
+});
+
+// Search functionality
+document.getElementById('clientSearch').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const clientCards = document.querySelectorAll('.client-card');
+    
+    clientCards.forEach(card => {
+        const name = card.dataset.name;
+        const company = card.dataset.company;
+        
+        if (name.includes(searchTerm) || company.includes(searchTerm)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+});
+
+// Status filter
+document.getElementById('statusFilter').addEventListener('change', function() {
+    const selectedStatus = this.value;
+    const clientCards = document.querySelectorAll('.client-card');
+    
+    clientCards.forEach(card => {
+        if (!selectedStatus || card.dataset.status === selectedStatus) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+});
+
+// Close modal when clicking outside
+document.getElementById('clientModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeClientModal();
+    }
+});
+</script>
+{% endblock %}
